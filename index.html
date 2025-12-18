@@ -155,6 +155,12 @@
             border: 2px solid #333;
         }
 
+        .legend-square {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #333;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -256,8 +262,20 @@
                         <span>Goal</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" style="background: #2c3e50;"></div>
+                        <div class="legend-square" style="background: #2c3e50;"></div>
                         <span>Wall</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square" style="background: #d4e6f1;"></div>
+                        <span>Your Trail</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square" style="background: #fadbd8;"></div>
+                        <span>AI Trail</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-square" style="background: #d5f4e6;"></div>
+                        <span>Shared Path</span>
                     </div>
                 </div>
             </div>
@@ -300,10 +318,14 @@
                 <strong>Controls:</strong><br>
                 • Use Arrow Keys or WASD to move<br>
                 • Avoid walls (black squares)<br>
-                • Don't collide with the AI!<br><br>
+                • You can cross the AI's path safely!<br><br>
                 <strong>AI Types:</strong><br>
                 • <strong>DFS:</strong> Depth-First Search (explores deeply)<br>
-                • <strong>BFS:</strong> Breadth-First Search (finds shortest path)
+                • <strong>BFS:</strong> Breadth-First Search (finds shortest path)<br><br>
+                <strong>Path Colors:</strong><br>
+                • Light Blue = Your trail<br>
+                • Light Pink = AI trail<br>
+                • Light Green = Both walked here
             </p>
             <button class="btn btn-primary" onclick="closeInfoModal()">Got it!</button>
         </div>
@@ -416,15 +438,23 @@
                     const y = row * cellSize;
 
                     if (maze[row][col] === 1) {
+                        // Wall
                         ctx.fillStyle = '#2c3e50';
                         ctx.fillRect(x, y, cellSize, cellSize);
                     } else if (maze[row][col] === 2) {
+                        // Player trail only
                         ctx.fillStyle = '#d4e6f1';
                         ctx.fillRect(x, y, cellSize, cellSize);
                     } else if (maze[row][col] === 3) {
+                        // Computer trail only
                         ctx.fillStyle = '#fadbd8';
                         ctx.fillRect(x, y, cellSize, cellSize);
+                    } else if (maze[row][col] === 4) {
+                        // Both walked here (shared path)
+                        ctx.fillStyle = '#d5f4e6';
+                        ctx.fillRect(x, y, cellSize, cellSize);
                     } else {
+                        // Empty path
                         ctx.fillStyle = '#ecf0f1';
                         ctx.fillRect(x, y, cellSize, cellSize);
                     }
@@ -475,7 +505,14 @@
                 newPos[1] >= 0 && newPos[1] < maze[0].length &&
                 maze[newPos[0]][newPos[1]] !== 1) {
                 
-                maze[playerPos[0]][playerPos[1]] = 2;
+                // Mark previous position
+                const prevCell = maze[playerPos[0]][playerPos[1]];
+                if (prevCell === 0) {
+                    maze[playerPos[0]][playerPos[1]] = 2; // Player trail
+                } else if (prevCell === 3) {
+                    maze[playerPos[0]][playerPos[1]] = 4; // Shared path
+                }
+                
                 playerPos = newPos;
                 playerSteps++;
                 
@@ -489,7 +526,15 @@
         function moveAI() {
             if (aiStep < aiPath.length - 1) {
                 aiStep++;
-                maze[computerPos[0]][computerPos[1]] = 3;
+                
+                // Mark previous AI position
+                const prevCell = maze[computerPos[0]][computerPos[1]];
+                if (prevCell === 0) {
+                    maze[computerPos[0]][computerPos[1]] = 3; // AI trail
+                } else if (prevCell === 2) {
+                    maze[computerPos[0]][computerPos[1]] = 4; // Shared path
+                }
+                
                 computerPos = [...aiPath[aiStep]];
             }
         }
@@ -499,9 +544,8 @@
                 endGame('🎉 You Won!', `Congratulations! You completed the maze in ${playerSteps} steps!`);
             } else if (computerPos[0] === goalPos[0] && computerPos[1] === goalPos[1]) {
                 endGame('😢 Computer Won!', `Computer completed in ${aiStep} steps. Try again!`);
-            } else if (playerPos[0] === computerPos[0] && playerPos[1] === computerPos[1]) {
-                endGame('💥 Collision!', 'You ran into the computer! Game Over!');
             }
+            // Removed collision check - players can cross paths now!
         }
 
         function updateStats() {
